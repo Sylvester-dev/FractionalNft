@@ -2,6 +2,6 @@
 
 To run follow these steps:
 
-1. Open [remix] (https://remix.ethereum.org/)
-2. Copy code from FNft.sol
-3. Run
+1. Open [Remix](https://remix.ethereum.org/)
+2. Copy code from FNFT.sol
+3. Compile and Run
