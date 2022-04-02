@@ -9,9 +9,6 @@ async function main() {
 
   console.log("FNFT deployed to:", fnft.address);
 
-  const mintTxn = await fnft.mint("1", "22");
-  await mintTxn.wait();
-  console.log("MINTED");
 }
 
 
@@ -21,3 +18,5 @@ main()
     console.error(error);
     process.exit(1);
   });
+
+  //0x5FbDB2315678afecb367f032d93F642f64180aa3

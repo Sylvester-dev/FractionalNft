@@ -16,7 +16,7 @@ contract Fnft is ERC1155 {
 
     // id: token id we want to mint [1,2 or 3]
     // amount: number of fractions we want to own of this nft
-    function mint(uint256 id, uint256 amount) public payable
+    function mint(uint256 id, uint256 amount) public
     {
         require(id <= 3, "Token id does not exist"); //suppose we have only 3 NFTs metadata
         require(id > 0, "Token id does not exist");
@@ -35,4 +35,4 @@ contract Fnft is ERC1155 {
 }
 
 
-//0x5FbDB2315678afecb367f032d93F642f64180aa3
+//0x5faE1E2BB81623553A9C216Ee0eCa7D49F82e28F

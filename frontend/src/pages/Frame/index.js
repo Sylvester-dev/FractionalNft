@@ -1,4 +1,4 @@
-import React from "react";
+import React,{ useEffect, useState } from "react";
 
 import { Column } from "components/Column";
 import { Stack } from "components/Stack";
@@ -11,7 +11,177 @@ import { SelectBox } from "components/SelectBox";
 import { Line } from "components/Line";
 import { List } from "components/List";
 
+import abi from "../../util/FNFT.json";
+import { ToastContainer, toast } from "react-toastify";
+import { ethers } from "ethers";
+import "react-toastify/dist/ReactToastify.css";
+
 const FramePage = () => {
+
+  const contractAddress = "0x5faE1E2BB81623553A9C216Ee0eCa7D49F82e28F";
+
+   const contractABI = abi.abi;
+
+    // State
+    const [currentAccount, setCurrentAccount] = useState(null);
+    const [token, setToken] = useState("");
+    const [amount, setAmount] = useState("");
+
+    // Actions
+    const checkIfWalletIsConnected = async () => {
+      try {
+        const { ethereum } = window;
+  
+        if (!ethereum) {
+          console.log('Make sure you have MetaMask!');
+          return;
+        } else {
+          console.log('We have the ethereum object', ethereum);
+  
+          const accounts = await ethereum.request({ method: 'eth_accounts' });
+  
+          if (accounts.length !== 0) {
+            const account = accounts[0];
+            console.log('Found an authorized account:', account);
+            setCurrentAccount(account);
+            toast.success("🦄 Wallet is Connected", {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+        });
+          } else {
+            console.log('No authorized account found');
+            toast.warn("No authorized account found", {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+          });
+          }
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    };
+  
+    /*
+     * Implement your connectWallet method here
+     */
+    const connectWalletAction = async () => {
+      try {
+        const { ethereum } = window;
+  
+        if (!ethereum) {
+          alert('Get MetaMask!');
+          return;
+        }
+  
+        /*
+         * Fancy method to request access to account.
+         */
+        const accounts = await ethereum.request({
+          method: 'eth_requestAccounts',
+        });
+  
+        /*
+         * Boom! This should print out public address once we authorize Metamask.
+         */
+        console.log('Connected', accounts[0]);
+        setCurrentAccount(accounts[0]);
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+    const mintFnft = async () => {
+      try {
+        const { ethereum } = window;
+  
+        if (ethereum) {
+          const provider = new ethers.providers.Web3Provider(ethereum);
+          const signer = provider.getSigner();
+          const fnftPortalContract = new ethers.Contract(
+            contractAddress,
+            contractABI,
+            signer
+          );
+  
+       
+  
+          const mintTxn = await fnftPortalContract.mint(
+            token,
+            amount,
+            {
+              gasLimit: 300000,
+            }
+          );
+          console.log("Minting...", mintTxn.hash);
+  
+          toast.info("Minting your Fractions...", {
+            position: "top-left",
+            autoClose: 18050,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+          });
+          await mintTxn.wait();
+  
+          console.log("Mined -- ", mintTxn.hash);
+
+  
+          setToken("");
+          setAmount("");
+  
+          toast.success("NFT Minted!", {
+            position: "top-left",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+          });
+        } else {
+          console.log("Ethereum object doesn't exist!");
+        }
+      } catch (error) {
+        toast.error(`${error.message}`, {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+        });
+        console.log(error.message);
+      }
+    };
+  
+  
+  
+    useEffect(() => {
+      checkIfWalletIsConnected();
+    }, []);
+
+    const handleOntokenChange = (event) => {
+      const { value } = event.target;
+      setToken(value);
+    };
+    const handleOnamountChange = (event) => {
+      const { value } = event.target;
+      setAmount(value);
+    };
+
   return (
     <Column className="bg-gray_50 items-center justify-start ml-[auto] mr-[auto] w-[100%]">
       <header className="self-stretch w-[100%]">
@@ -50,8 +220,8 @@ const FramePage = () => {
                 <Text className="2xl:text-fs16 3xl:text-fs20 font-normal lg:text-fs13 text-bluegray_300 text-fs14 text-left">{`Collections`}</Text>
                 <Text className="2xl:text-fs16 3xl:text-fs20 font-normal lg:text-fs13 text-bluegray_300 text-fs14 text-left">{`Community`}</Text>
               </Row>
-              <Button className="2xl:ml-[38px] 3xl:ml-[46px] bg-white_A700 border border-deep_purple_A400_66 border-solid lg:ml-[29px] ml-[32px] rounded-radius13 w-[35%] xl:ml-[34px]">
-                {"Log in"}
+              <Button onClick={connectWalletAction} className="2xl:ml-[38px] 3xl:ml-[46px] bg-white_A700 border border-deep_purple_A400_66 border-solid lg:ml-[29px] ml-[32px] rounded-radius13 w-[35%] xl:ml-[34px]">
+               {currentAccount ? "Connected" : "Log in" }
               </Button>
               <Image
                 src="img_settingsovr.svg"
@@ -80,40 +250,33 @@ const FramePage = () => {
               <Text className="2xl:ml-[43px] 2xl:text-fs10 3xl:ml-[51px] 3xl:text-fs12 font-normal lg:ml-[33px] lg:text-fs8 ml-[35.809998px] text-bluegray_300 text-fs895348834991455 text-left uppercase xl:ml-[38px] xl:text-fs9">{`your fractional nft`}</Text>
               <Text className="2xl:mr-[43px] 2xl:text-fs10 3xl:mr-[51px] 3xl:text-fs12 font-normal lg:mr-[33px] lg:text-fs8 mr-[35.819946px] text-bluegray_900 text-fs895348834991455 text-left uppercase xl:mr-[38px] xl:text-fs9">{`balance: 0 USD`}</Text>
             </Row>
-            <Row className="2xl:mt-[12px] 2xl:mx-[43px] 3xl:mt-[14px] 3xl:mx-[51px] border-bw179 border-gray_300 border-solid font-satoshi items-center lg:mt-[9px] lg:mx-[33px] ml-[35.809998px] mr-[35.81px] mt-[10.179993px] rounded-radius7162791 w-[84%] xl:mt-[10px] xl:mx-[38px]">
+            <Row className="2xl:mt-[12px] 2xl:mx-[43px] 3xl:mt-[14px] 3xl:mx-[51px] border-bw179 border-gray_300 border-solid font-sans items-center lg:mt-[9px] lg:mx-[33px] ml-[35.809998px] mr-[35.81px] mt-[10.179993px] rounded-radius7162791 w-[84%] xl:mt-[10px] xl:mx-[38px]">
               <Input
-                className="2xl:mb-[16px] 2xl:ml-[29px] 2xl:mt-[17px] 2xl:text-fs34 3xl:ml-[34px] 3xl:my-[20px] 3xl:text-fs41 bg-transparent border-0 font-bold font-satoshi lg:ml-[22px] lg:my-[13px] lg:text-fs26 mb-[14.149994px] ml-[24.179993px] mt-[14.320007px] placeholder:bg-transparent placeholder:text-grey text-black_900 text-fs2865116310119629 text-left tracking-ls11 w-[44%] xl:ml-[25px] xl:my-[15px] xl:text-fs30"
+                className="2xl:mb-[16px] 2xl:ml-[29px] 2xl:mt-[17px] 2xl:text-fs34 3xl:ml-[34px] 3xl:my-[20px] 3xl:text-fs41 bg-transparent border-0 font-bold font-sans lg:ml-[22px] lg:my-[13px] lg:text-fs26 mb-[14.149994px] ml-[24.179993px] mt-[14.320007px] placeholder:bg-transparent placeholder:text-grey text-black_900 text-fs2865116310119629 text-left tracking-ls11 w-[44%] xl:ml-[25px] xl:my-[15px] xl:text-fs30"
+                id="token"
                 name="token"
                 placeholder={`Token`}
+                onChange={handleOntokenChange}
               ></Input>
             </Row>
-            <Row className="2xl:mt-[12px] 2xl:mx-[43px] 3xl:mt-[14px] 3xl:mx-[51px] border-bw179 border-gray_300 border-solid font-satoshi items-center lg:mt-[9px] lg:mx-[33px] ml-[35.809998px] mr-[35.81px] mt-[10.179993px] rounded-radius7162791 w-[84%] xl:mt-[10px] xl:mx-[38px]">
+            <Row className="2xl:mt-[12px] 2xl:mx-[43px] 3xl:mt-[14px] 3xl:mx-[51px] border-bw179 border-gray_300 border-solid font-sans items-center lg:mt-[9px] lg:mx-[33px] ml-[35.809998px] mr-[35.81px] mt-[10.179993px] rounded-radius7162791 w-[84%] xl:mt-[10px] xl:mx-[38px]">
               <Input
-                className="2xl:mb-[16px] 2xl:ml-[29px] 2xl:mt-[17px] 2xl:text-fs34 3xl:ml-[34px] 3xl:my-[20px] 3xl:text-fs41 bg-transparent border-0 font-bold font-satoshi lg:ml-[22px] lg:my-[13px] lg:text-fs26 mb-[14.149994px] ml-[24.179993px] mt-[14.320007px] placeholder:bg-transparent placeholder:text-grey text-black_900 text-fs2865116310119629 text-left tracking-ls11 w-[44%] xl:ml-[25px] xl:my-[15px] xl:text-fs30"
+                className="2xl:mb-[16px] 2xl:ml-[29px] 2xl:mt-[17px] 2xl:text-fs34 3xl:ml-[34px] 3xl:my-[20px] 3xl:text-fs41 bg-transparent border-0 font-bold font-sans lg:ml-[22px] lg:my-[13px] lg:text-fs26 mb-[14.149994px] ml-[24.179993px] mt-[14.320007px] placeholder:bg-transparent placeholder:text-grey text-black_900 text-fs2865116310119629 text-left tracking-ls11 w-[44%] xl:ml-[25px] xl:my-[15px] xl:text-fs30"
+                id="amount"
                 name="amount"
                 placeholder={`Amount`}
+                onChange={handleOnamountChange}
               ></Input>
             </Row>
           </Column>
           <Stack className="2xl:h-[35px] 2xl:mt-[25px] 3xl:h-[42px] 3xl:mt-[30px] h-[28.65px] lg:h-[27px] lg:mt-[20px] mt-[21.49002px] self-stretch w-[100%] xl:h-[31px] xl:mt-[22px]">
             <Line className="2xl:bottom-[15px] 3xl:bottom-[18px] absolute bg-gray_100 bottom-[12.53px] h-[1.79px] lg:bottom-[11px] self-stretch w-[100%] xl:bottom-[13px]" />
             <Stack className="2xl:h-[35px] 2xl:inset-x-[173px] 3xl:h-[42px] 3xl:inset-x-[207px] absolute font-inter h-[28.65px] inset-y-[0] left-[144.15px] lg:h-[27px] lg:inset-x-[134px] right-[144.16px] w-[36%] xl:h-[31px] xl:inset-x-[153px]">
-              <Input
-                className="2xl:pb-[6px] 2xl:pl-[8px] 2xl:pt-[9px] 2xl:text-fs17 3xl:pb-[8px] 3xl:pl-[10px] 3xl:pt-[11px] 3xl:text-fs20 absolute bg-white_A700 border-0 font-medium left-[0] lg:pb-[5px] lg:pl-[6px] lg:pt-[7px] lg:text-fs13 pb-[5.75px] pl-[7.159973px] placeholder:bg-transparent placeholder:text-black_900 pt-[8.059999px] text-black_900 text-fs14325581550598145 text-left tracking-ls1 w-[87%] xl:pb-[6px] xl:pl-[7px] xl:pt-[8px] xl:text-fs15"
-                name="Shares"
-                placeholder={`Shares`}
-              ></Input>
-              <Button className="2xl:bottom-[2px] 2xl:pb-[5px] 2xl:pl-[23px] 2xl:pr-[24px] 2xl:pt-[6px] 2xl:right-[32px] 2xl:text-fs12 3xl:bottom-[2px] 3xl:pb-[6px] 3xl:pl-[28px] 3xl:pr-[29px] 3xl:pt-[7px] 3xl:right-[38px] 3xl:text-fs15 absolute bg-gray_51 border-bw bottom-[1.79px] font-medium lg:bottom-[1px] lg:pb-[4px] lg:pl-[18px] lg:pr-[19px] lg:pt-[5px] lg:right-[25px] lg:text-fs10 pb-[4.695px] pl-[19.699951px] pr-[20.450073px] pt-[5.385px] right-[26.86px] rounded-radius269 text-center text-fs10744186401367188 text-gray_900 w-[42%] xl:bottom-[1px] xl:px-[21px] xl:py-[5px] xl:right-[28px] xl:text-fs11">{`22.16`}</Button>
-              <Stack className="2xl:h-[35px] 2xl:w-[34px] 3xl:h-[42px] 3xl:w-[41px] absolute bg-white_A700 h-[28.65px] lg:h-[27px] lg:w-[26px] right-[0] rounded-radius8952593 w-[28.65px] xl:h-[31px] xl:w-[30px]">
-                <Image
-                  src="img_frame_1.svg"
-                  className="2xl:h-[18px] 2xl:inset-[8px] 2xl:w-[17px] 3xl:h-[21px] 3xl:inset-[10px] 3xl:w-[20px] absolute h-[14.33px] inset-y-[7.1600037px] left-[7.159973px] lg:h-[14px] lg:inset-[6px] lg:w-[13px] object-contain right-[7.160034px] w-[14.33px] xl:h-[16px] xl:inset-[7px] xl:w-[15px]"
-                  alt="Frame"
-                />
-              </Stack>
+            <Text className="2xl:mr-[43px] 2xl:text-fs10 3xl:mr-[51px] 3xl:text-fs12 font-normal lg:mr-[33px] lg:text-fs8 mr-[35.819946px] text-bluegray_900 text-fs895348834991455 text-center uppercase xl:mr-[38px] xl:text-fs9">Buying {amount} Share of Token {token}</Text>
+              
             </Stack>
           </Stack>
-          <Button className="2xl:leading-lh21 2xl:mb-[47px] 2xl:mt-[29px] 2xl:mx-[43px] 2xl:pb-[16px] 2xl:pt-[13px] 2xl:px-[42px] 2xl:text-fs15 3xl:leading-lh25 3xl:mb-[56px] 3xl:mt-[34px] 3xl:mx-[51px] 3xl:pb-[19px] 3xl:pt-[16px] 3xl:px-[50px] 3xl:text-fs18 bg-green_A700 border-bw font-bold leading-lh1791 lg:leading-lh16 lg:mb-[36px] lg:mt-[22px] lg:mx-[33px] lg:pb-[12px] lg:pt-[10px] lg:px-[32px] lg:text-fs11 mb-[39.390076px] ml-[35.809998px] mr-[35.81px] mt-[24.179993px] pb-[13.339966px] pt-[11.640015px] px-[35px] rounded-radius537 text-center text-fs12534883499145508 text-white_A700 w-[84%] xl:leading-lh19 xl:mb-[42px] xl:mt-[25px] xl:mx-[38px] xl:pb-[14px] xl:pt-[12px] xl:px-[37px] xl:text-fs13">{`Mint My NFT`}</Button>
+          <Button onClick={mintFnft} className="2xl:leading-lh21 2xl:mb-[47px] 2xl:mt-[29px] 2xl:mx-[43px] 2xl:pb-[16px] 2xl:pt-[13px] 2xl:px-[42px] 2xl:text-fs15 3xl:leading-lh25 3xl:mb-[56px] 3xl:mt-[34px] 3xl:mx-[51px] 3xl:pb-[19px] 3xl:pt-[16px] 3xl:px-[50px] 3xl:text-fs18 bg-green_A700 border-bw font-bold leading-lh1791 lg:leading-lh16 lg:mb-[36px] lg:mt-[22px] lg:mx-[33px] lg:pb-[12px] lg:pt-[10px] lg:px-[32px] lg:text-fs11 mb-[39.390076px] ml-[35.809998px] mr-[35.81px] mt-[24.179993px] pb-[13.339966px] pt-[11.640015px] px-[35px] rounded-radius537 text-center text-fs12534883499145508 text-white_A700 w-[84%] xl:leading-lh19 xl:mb-[42px] xl:mt-[25px] xl:mx-[38px] xl:pb-[14px] xl:pt-[12px] xl:px-[37px] xl:text-fs13">{`Mint My NFT`}</Button>
         </Column>
         
           <Stack className="2xl:h-[648px] 2xl:left-[129px] 3xl:h-[777px] 3xl:left-[154px] absolute h-[539px] left-[107.56px] lg:h-[504px] lg:left-[100px] top-[0] w-[42%] xl:h-[576px] xl:left-[114px]">
@@ -470,6 +633,17 @@ const FramePage = () => {
           </Row>
         </Column>
       </footer>
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
     </Column>
   );
 };
